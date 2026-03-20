@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>BizInsight – Obchodná inteligencia</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--fg:#0a0a14;--card:#fff;--primary:#030213;--primary-fg:#fff;
+  --muted:#ececf0;--muted-fg:#717182;--border:rgba(0,0,0,.1);
+  --accent:#e9ebef;--green:#16a34a;--red:#dc2626;
+  --blue:#3b82f6;--emerald:#10b981;--amber:#f59e0b;
+  --purple:#8b5cf6;--slate:#94a3b8;--radius:.625rem;
+  --input-bg:#f3f3f5;
+}
+body{font-family:system-ui,-apple-system,sans-serif;font-size:15px;background:var(--bg);color:var(--fg);line-height:1.5}
+.app{display:flex;min-height:100vh}
+.sidebar{width:256px;flex-shrink:0;border-right:1px solid var(--border);background:var(--card);display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:20}
+.sidebar-logo{height:64px;display:flex;align-items:center;gap:8px;padding:0 24px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sidebar-logo span{font-size:20px;font-weight:600}
+.sidebar-nav{flex:1;padding:24px 16px;display:flex;flex-direction:column;gap:4px}
+.nav-link{display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:var(--radius);cursor:pointer;font-size:15px;color:var(--muted-fg);border:none;background:none;width:100%;text-align:left;transition:background .12s,color .12s}
+.nav-link:hover{background:var(--accent);color:var(--fg)}
+.nav-link.active{background:var(--primary);color:var(--primary-fg)}
+.nav-link svg{width:20px;height:20px;flex-shrink:0}
+.sidebar-footer{padding:16px;border-top:1px solid var(--border);flex-shrink:0}
+.sidebar-footer p{font-size:13px;color:var(--muted-fg)}
+.sidebar-footer .sub{font-size:12px;margin-top:2px}
+.main{margin-left:256px;flex:1}
+.main-inner{padding:32px;max-width:1200px}
+.mob-hd{display:none;align-items:center;justify-content:space-between;padding:0 16px;height:56px;border-bottom:1px solid var(--border);background:var(--card);position:sticky;top:0;z-index:15}
+.mob-hd .logo-text{font-size:17px;font-weight:600;display:flex;align-items:center;gap:8px}
+.ham{background:none;border:none;cursor:pointer;padding:6px;color:var(--fg)}
+.sidebar-overlay{display:none;position:fixed;inset:0;z-index:19;background:rgba(0,0,0,.3)}
+.page{display:none}.page.active{display:block}
+.page-hd{margin-bottom:28px}
+.page-hd h1{font-size:28px;font-weight:700}
+.page-hd p{color:var(--muted-fg);margin-top:2px;font-size:14px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:24px}
+.mc{background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}
+.mc-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 6px}
+.mc-title{font-size:13px;font-weight:500}
+.mc-icon{width:16px;height:16px;color:var(--muted-fg)}
+.mc-body{padding:0 20px 16px}
+.mc-val{font-size:24px;font-weight:700}
+.mc-sub{font-size:12px;margin-top:2px}
+.pos{color:var(--green)}.neg{color:var(--red)}.neu{color:var(--muted-fg)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}
+.card-hd{padding:20px 20px 0;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.card-title{font-size:16px;font-weight:600}
+.card-body{padding:20px}
+.card-body-top{padding:8px 20px 20px}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-bottom:20px}
+.mb20{margin-bottom:20px}
+.chart-wrap{position:relative}
+.h300{height:300px}.h240{height:240px}.h350{height:350px}.h200{height:200px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:8px 10px;text-align:left;font-weight:500;color:var(--muted-fg);border-bottom:1px solid var(--border);font-size:12px}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+.tr{text-align:right}.fm{font-weight:500}
+.tg{color:var(--green)}.tr2{color:var(--red)}
+.badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500}
+.b-dark{background:var(--primary);color:var(--primary-fg)}
+.b-light{background:var(--muted);color:var(--muted-fg)}
+.b-green{background:#dcfce7;color:#15803d}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--primary);color:var(--primary-fg);transition:opacity .12s}
+.btn:hover{opacity:.85}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-ghost{border:none;background:none;cursor:pointer;padding:4px;border-radius:6px;color:var(--muted-fg);transition:background .1s;display:inline-flex;align-items:center}
+.btn-ghost:hover{background:var(--accent)}
+.btn-ghost svg{width:14px;height:14px;display:block}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+.overlay.hidden{display:none}
+.modal{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);width:100%;max-width:440px;box-shadow:0 8px 40px rgba(0,0,0,.15);max-height:90vh;overflow-y:auto}
+.modal-hd{padding:20px 20px 0}
+.modal-hd h2{font-size:17px;font-weight:600}
+.modal-hd p{font-size:13px;color:var(--muted-fg);margin-top:4px}
+.modal-body{padding:16px 20px}
+.modal-foot{padding:0 20px 20px;display:flex;justify-content:flex-end;gap:8px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:500;margin-bottom:5px}
+.field input,.field select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;background:var(--input-bg);color:var(--fg);outline:none;transition:border-color .12s}
+.field input:focus,.field select:focus{border-color:#6366f1;background:var(--bg)}
+.field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23717182' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-color:var(--input-bg);padding-right:30px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0 14px}
+.toggle-wrap{position:relative;width:40px;height:22px;flex-shrink:0}
+.toggle-wrap input{opacity:0;width:100%;height:100%;position:absolute;cursor:pointer;margin:0;z-index:1}
+.toggle-track{width:40px;height:22px;background:#cbced4;border-radius:11px;position:relative;transition:background .2s;pointer-events:none}
+.toggle-wrap input:checked~.toggle-track{background:var(--primary)}
+.toggle-thumb{position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s}
+.toggle-wrap input:checked~.toggle-track .toggle-thumb{transform:translateX(18px)}
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:10px 16px;border-radius:var(--radius);font-size:13px;font-weight:500;animation:fadein .2s;box-shadow:0 4px 12px rgba(0,0,0,.15);pointer-events:none}
+.toast.ok{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.toast.err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.mkt-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px}
+.mkt-card:last-child{margin-bottom:0}
+.mkt-name{font-weight:600;font-size:14px;margin-bottom:4px}
+.mkt-meta{font-size:12px;color:var(--muted-fg);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.mkt-cost{font-size:13px;margin-top:6px;color:var(--muted-fg)}
+.mkt-cost strong{color:var(--fg)}
+.rev-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.rev-card:last-child{margin-bottom:0}
+.rev-name{font-weight:600;font-size:13px;margin-bottom:2px}
+.rev-channel{font-size:11px;color:var(--muted-fg)}
+.rev-right{text-align:right}
+.rev-amount{font-size:22px;font-weight:700;color:var(--green);line-height:1}
+.rev-roi{font-size:12px;margin-top:3px}
+.rev-total{background:var(--muted);border-radius:var(--radius);padding:12px 16px;margin-top:12px;display:flex;justify-content:space-between;align-items:center}
+.rev-total-label{font-size:13px;font-weight:600}
+.rev-total-val{font-size:18px;font-weight:700}
+ 
+.empty{min-height:200px;display:flex;align-items:center;justify-content:center;color:var(--muted-fg);font-size:13px}
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);transition:transform .25s}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .g2{grid-template-columns:1fr}
+  .main-inner{padding:16px}
+  .mob-hd{display:flex}
+}
+</style>
+</head>
+<body>
+<div class="app">
+ 
+<div class="mob-hd">
+  <div class="logo-text">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+    BizInsight
+  </div>
+  <button class="ham" onclick="toggleSidebar()">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+</div>
+<div class="sidebar-overlay" id="sb-overlay" onclick="toggleSidebar()"></div>
+ 
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+    <span>BizInsight</span>
+  </div>
+  <nav class="sidebar-nav">
+    <button class="nav-link active" onclick="showPage('dashboard',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Prehľad
+    </button>
+    <button class="nav-link" onclick="showPage('finances',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Financie
+    </button>
+    <button class="nav-link" onclick="showPage('time',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Správa času
+    </button>
+    <button class="nav-link" onclick="showPage('investments',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Investície
+    </button>
+    <button class="nav-link" onclick="showPage('marketing',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Marketing
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <p class="fm" style="font-weight:500">Edícia pre malé firmy</p>
+    <p class="sub">Sila rastu</p>
+  </div>
+</aside>
+ 
+<main class="main">
+<div class="main-inner">
+ 
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page active">
+  <div class="page-hd"><h1>Prehľad</h1><p>Vitajte späť! Tu je prehľad vášho podnikania.</p></div>
+  <div class="metrics" id="dash-metrics"></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Príjmy vs. Výdavky</span><button class="btn btn-sm" onclick="openModal('m-monthly')">+ Pridať údaje</button></div>
+      <div class="card-body"><div class="chart-wrap h300"><canvas id="ch-rev-exp"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Rozloženie času podľa projektu</span></div>
+      <div class="card-body" id="pie-time-wrap"><div class="chart-wrap h300"><canvas id="ch-time-pie"></canvas></div></div>
+    </div>
+  </div>
+  <div class="card mb20">
+    <div class="card-hd"><span class="card-title">Stav projektov podľa týždňa</span><button class="btn btn-sm" onclick="openModal('m-project')">+ Pridať projekt</button></div>
+    <div class="card-body"><div class="chart-wrap h200"><canvas id="ch-proj-status"></canvas></div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-hd"><span class="card-title">Mesačné údaje</span></div><div class="card-body-top" id="tbl-monthly"></div></div>
+    <div class="card"><div class="card-hd"><span class="card-title">Všetky projekty</span></div><div class="card-body-top" id="tbl-projects"></div></div>
+  </div>
+</div>
+ 
+<!-- FINANCES -->
+<div id="page-finances" class="page">
+  <div class="page-hd"><h1>Financie</h1><p>Sledujte príjmy, výdavky a celkové finančné zdravie podniku.</p></div>
+  <div class="metrics" id="fin-metrics"></div>
+  <div class="card mb20">
+    <div class="card-hd"><span class="card-title">Analýza peňažných tokov</span></div>
+    <div class="card-body"><div class="chart-wrap h350"><canvas id="ch-cashflow"></canvas></div></div>
+  </div>
+  <div class="g2 mb20">
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Výdavky podľa kategórie</span></div>
+      <div class="card-body" id="exp-cat-wrap"><div class="chart-wrap h240"><canvas id="ch-exp-cat"></canvas></div></div>
+    </div>
+    <div class="card"><div class="card-hd"><span class="card-title">Rozdelenie výdavkov</span></div><div class="card-body-top" id="tbl-exp-breakdown"></div></div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><span class="card-title">Nedávne transakcie</span><button class="btn btn-sm" onclick="openModal('m-transaction')">+ Pridať transakciu</button></div>
+    <div class="card-body-top" id="tbl-transactions"></div>
+  </div>
+</div>
+ 
+<!-- TIME MANAGEMENT -->
+<div id="page-time" class="page">
+  <div class="page-hd"><h1>Správa času</h1><p>Sledujte čas, analyzujte produktivitu a optimalizujte plán.</p></div>
+  <div class="metrics" id="time-metrics"></div>
+  <div class="g2 mb20">
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Prehľad hodín za týždeň</span><button class="btn btn-sm" onclick="openModal('m-weeklyhours')">+ Pridať hodiny</button></div>
+      <div class="card-body"><div class="chart-wrap h300"><canvas id="ch-weekly"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Trend produktivity</span><button class="btn btn-sm" onclick="openModal('m-productivity')">+ Pridať údaje</button></div>
+      <div class="card-body"><div class="chart-wrap h300"><canvas id="ch-productivity"></canvas></div></div>
+    </div>
+  </div>
+  <div class="card mb20">
+    <div class="card-hd"><span class="card-title">Záznamy času</span><button class="btn btn-sm" onclick="openModal('m-timeentry')">+ Pridať záznam</button></div>
+    <div class="card-body-top" id="tbl-timeentries"></div>
+  </div>
+  <div class="card mb20"><div class="card-hd"><span class="card-title">Hodiny podľa klienta</span></div><div class="card-body-top" id="tbl-byclient"></div></div>
+  <div class="g2">
+    <div class="card"><div class="card-hd"><span class="card-title">Denné hodiny</span></div><div class="card-body-top" id="tbl-dailyhours"></div></div>
+    <div class="card"><div class="card-hd"><span class="card-title">Údaje o produktivite</span></div><div class="card-body-top" id="tbl-productivity"></div></div>
+  </div>
+</div>
+ 
+<!-- INVESTMENTS -->
+<div id="page-investments" class="page">
+  <div class="page-hd"><h1>Investície</h1><p>Monitorujte investičné portfólio a sledujte výnosy.</p></div>
+  <div class="metrics" id="inv-metrics"></div>
+  <div class="g2 mb20">
+    <div class="card"><div class="card-hd"><span class="card-title">Rast portfólia</span></div><div class="card-body"><div class="chart-wrap h300"><canvas id="ch-portfolio"></canvas></div></div></div>
+    <div class="card"><div class="card-hd"><span class="card-title">Investície podľa kategórie</span></div><div class="card-body"><div class="chart-wrap h300"><canvas id="ch-inv-pie"></canvas></div></div></div>
+  </div>
+  <div class="card mb20">
+    <div class="card-hd"><span class="card-title">Investičné portfólio</span><button class="btn btn-sm" onclick="openModal('m-investment')">+ Pridať investíciu</button></div>
+    <div class="card-body-top" id="tbl-investments"></div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><span class="card-title">Snímky portfólia</span><button class="btn btn-sm" onclick="openModal('m-snapshot')">+ Pridať snímku</button></div>
+    <div class="card-body-top" id="tbl-snapshots"></div>
+  </div>
+</div>
+ 
+ 
+<!-- MARKETING -->
+<div id="page-marketing" class="page">
+  <div class="page-hd"><h1>Marketing</h1><p>Sledujte kampane, náklady a ich vplyv na tržbu.</p></div>
+  <div class="metrics" id="mkt-metrics"></div>
+ 
+  <!-- Split: left = campaigns, right = revenue impact -->
+  <div class="g2 mb20">
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Kampane &amp; náklady</span>
+        <button class="btn btn-sm" onclick="openModal('m-campaign')">+ Pridať kampaň</button>
+      </div>
+      <div class="card-body-top" id="tbl-campaigns"></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Vplyv na tržbu</span></div>
+      <div class="card-body-top" id="tbl-rev-impact"></div>
+    </div>
+  </div>
+ 
+  <!-- Chart: cost vs revenue per campaign -->
+  <div class="card mb20">
+    <div class="card-hd"><span class="card-title">Náklady vs. Prírastok tržby</span></div>
+    <div class="card-body"><div class="chart-wrap h300"><canvas id="ch-mkt-bar"></canvas></div></div>
+  </div>
+ 
+  <!-- ROI by channel -->
+  <div class="g2">
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Výdavky podľa kanála</span></div>
+      <div class="card-body" id="mkt-channel-wrap"><div class="chart-wrap h240"><canvas id="ch-mkt-channel"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Prehľad podľa kanála</span></div>
+      <div class="card-body-top" id="tbl-mkt-channel"></div>
+    </div>
+  </div>
+</div>
+ 
+</div></main></div>
+ 
+<!-- MODALS -->
+<div class="overlay hidden" id="m-transaction" onclick="overlayClick(event,'m-transaction')">
+  <div class="modal">
+    <div class="modal-hd"><h2>Pridať transakciu</h2><p>Pridajte nový príjmový alebo výdavkový záznam.</p></div>
+    <div class="modal-body">
+      <div class="field"><label>Dátum</label><input type="date" id="f-tx-date"/></div>
+      <div class="field"><label>Typ</label><select id="f-tx-type"><option value="income">Príjem</option><option value="expense">Výdavok</option></select></div>
+      <div class="field"><label>Popis</label><input type="text" id="f-tx-desc" placeholder="napr. Platba od klienta"/></div>
+      <div class="field"><label>Suma ($)</label><input type="number" id="f-tx-amount" step="0.01" min="0" placeholder="0.00"/></div>
+      <div class="field"><label>Kategória (nepovinné)</label><input type="text" id="f-tx-cat" placeholder="napr. Marketing, Mzdy"/></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" style="background:var(--muted);color:var(--fg)" onclick="closeModal('m-transaction')">Zrušiť</button>
+      <button class="btn" onclick="addTransaction()">Pridať transakciu</button>
+    </div>
+  </div>
+</div>
+ 
+<div class="overlay hidden" id="m-monthly" onclick="overlayClick(event,'m-monthly')">
+  <div class="modal">
+    <div class="modal-hd"><h2>Pridať mesačné údaje</h2><p>Zadajte príjmy a výdavky za daný mesiac.</p></div>
+    <div class="modal-body">
+      <div class="field"><label>Mesiac</label><select id="f-md-month"><option value="">Vyberte mesiac</option><option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option><option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option></select></div>
+      <div class="field"><label>Rok</label><input type="number" id="f-md-year" value="2026"/></div>
+      <div class="field"><label>Príjmy ($)</label><input type="number" id="f-md-rev" step="0.01" min="0" placeholder="0.00"/></div>
+      <div class="field"><label>Výdavky ($)</label><input type="number" id="f-md-exp" step="0.01" min="0" placeholder="0.00"/></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" style="background:var(--muted);color:var(--fg)" onclick="closeModal('m-monthly')">Zrušiť</button>
+      <button class="btn" onclick="addMonthlyData()">Pridať údaje</button>
+    </div>
+  </div>
+</div>
+ 
+<div class="overlay hidden" id="m-project" onclick="overlayClick(event,'m-project')">
+  <div class="modal">
+    <div class="modal-hd"><h2>Pridať stav projektu</h2><p>Sledujte dokončenie projektov podľa týždňa.</p></div>
+    <div class="modal-body">
+      <div class="field"><label>Názov projektu</label><input type="text" id="f-pr-name" placeholder="napr. Redesign webu"/></div>
+      <div class="field"><label>Stav</label><select id="f-pr-status"><option value="ongoing">Prebieha</option><option value="completed">Dokončený</option></select></div>
+      <div class="field"><label>Číslo týždňa</label><input type="number" id="f-pr-week" min="1" max="53" placeholder="1–53"/></div>
+      <div class="field"><label>Rok</label><input type="number" id="f-pr-year" value="2026"/></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" style="background:var(--muted);color:var(--fg)" onclick="closeModal('m-project')">Zrušiť</button>
+      <button class="btn" onclick="addProject()">Pridať projekt</button>
+    </div>
+  </div>
+</div>
+ 
+<div class="overlay hidden" id="m-timeentry" onclick="overlayClick(event,'m-timeentry')">
+  <div class="modal">
+    <div class="modal-hd"><h2>Pridať záznam času</h2><p>Zaznamenajte čas strávený na projekte alebo úlohe.</p></div>
+    <div class="modal-body">
+      <div class="field"><label>Dátum</label><input type="date" id="f-te-date"/></div>
+      <div class="field"><label>Názov projektu</label><input type="text" id="f-te-project" placeholder="napr. Redesign webu"/></div>
+      <div class="field"><label>Klient</label><input type="text" id="f-te-client" placeholder="napr. Tech Corp"/></div>
+      <div class="field"><label>Hodiny</label><input type="number" id="f-te-hours" step="0.5" min="0" placeholder="0.0"/></div>
+      <div class="toggle-row">
+        <label style="margin:0;font-size:13px;font-weight:500">Fakturovateľné</label>
+        <div class="toggle-wrap"><input type="checkbox" id="f-te-billable" checked><div class="toggle-track"><div class="toggle-thumb"></div></div></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" style="background:var(--muted);color:var(--fg)" onclick="closeModal('m-timeentry')">Zrušiť</button>
+      <button class="btn" onclick="addTimeEntry()">Pridať záznam</button>
+    </div>
+  </div>
+</div>
+ 
+<div class="overlay hidden" id="m-weeklyhours" onclick="overlayClick(event,'m-weeklyhours')">
+  <div class="modal">
+    <div class="modal-hd"><h2>Pridať denné hodiny</h2><p>Sledujte fakturovateľné a nefakturovateľné hodiny za deň.</p></div>
+    <div class="modal-body">
+      <div class="field"><label>Dátum</label><input type="date" id="f-wh-date"/></div>
+      <div class="field"><label>Fakturovateľné hodiny</label><input type="number" id="f-wh-bill" step="0.5" min="0" placeholder="0.0"/></div>
+      <div class="field"><label>Nefakturovateľné hodiny</label><input type="number" id="f-wh-nb" step="0.5" min="0" placeholder="0.0"/></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" style="background:var(--muted);color:var(--fg)" onclick="closeModal('m-weeklyhours')">Zrušiť</button>
+      <button class="btn" onclick="addWeeklyHours()">Pridať hodiny</button>
+    </div>
+  </div>
+</div>
+ 
+<div class="overlay hidden" id="m-productivity" onclick="overlayClick(event,'m-productivity')">
+  <div class="modal">
+    <div class="modal-hd"><h2>Pridať údaje o produktivite</h2><p>Sledujte percento produktivity podľa týždňa.</p></div>
+    <div class="modal-body">
+      <div class="field"><label>Číslo týždňa</label><input type="number" id="f-pd-week" min="1" max="53" placeholder="1–53"/></div>
+      <div class="field"><label>Rok</label><input type="number" id="f-pd-year" value="2026"/></div>
+      <div class="field"><label>Produktivita (%)</label><input type="number" id="f-pd-prod" min="0" max="100" placeholder="0–100"/></div>
+      <div class="field"><label>Cieľ (%)</label><input type="number" id="f-pd-tgt" min="0" max="100" value="80"/></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" style="background:var(--muted);color:var(--fg)" onclick="closeModal('m-productivity')">Zrušiť</button>
+      <button class="btn" onclick="addProductivity()">Pridať údaje</button>
+    </div>
+  </div>
+</div>
+ 
+<div class="overlay hidden" id="m-investment" onclick="overlayClick(event,'m-investment')">
+  <div class="modal">
+    <div class="modal-hd"><h2>Pridať investíciu</h2><p>Zaznamenajte novú obchodnú investíciu.</p></div>
+    <div class="modal-body">
+      <div class="field"><label>Názov investície</label><input type="text" id="f-inv-name" placeholder="napr. Nový laptop"/></div>
+      <div class="field"><label>Kategória</label><select id="f-inv-cat"><option value="">Vyberte kategóriu</option><option>Zariadenie</option><option>Marketing</option><option>Technológie</option><option>Školenie</option><option>Infraštruktúra</option><option>Iné</option></select></div>
+      <div class="field"><label>Počiatočná suma ($)</label><input type="number" id="f-inv-amt" step="0.01" min="0" placeholder="0.00"/></div>
+      <div class="field"><label>Aktuálna hodnota ($) <span style="font-weight:400;color:var(--muted-fg)">(prázdne = rovnaká ako počiatočná)</span></label><input type="number" id="f-inv-cv" step="0.01" min="0" placeholder="Nechajte prázdne ak je rovnaká"/></div>
+      <div class="field"><label>Dátum</label><input type="date" id="f-inv-date"/></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" style="background:var(--muted);color:var(--fg)" onclick="closeModal('m-investment')">Zrušiť</button>
+      <button class="btn" onclick="addInvestment()">Pridať investíciu</button>
+    </div>
+  </div>
+</div>
+ 
+<div class="overlay hidden" id="m-snapshot" onclick="overlayClick(event,'m-snapshot')">
+  <div class="modal">
+    <div class="modal-hd"><h2>Pridať snímku portfólia</h2><p>Zaznamenajte hodnotu portfólia v danom čase.</p></div>
+    <div class="modal-body">
+      <div class="field"><label>Mesiac</label><select id="f-ps-month"><option value="">Vyberte mesiac</option><option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option><option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option></select></div>
+      <div class="field"><label>Rok</label><input type="number" id="f-ps-year" value="2026"/></div>
+      <div class="field"><label>Celková hodnota ($)</label><input type="number" id="f-ps-val" step="0.01" min="0" placeholder="0.00"/></div>
+      <div class="field"><label>Celkové investície ($)</label><input type="number" id="f-ps-inv" step="0.01" min="0" placeholder="0.00"/></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" style="background:var(--muted);color:var(--fg)" onclick="closeModal('m-snapshot')">Zrušiť</button>
+      <button class="btn" onclick="addSnapshot()">Pridať snímku</button>
+    </div>
+  </div>
+</div>
+ 
+ 
+<div class="overlay hidden" id="m-campaign" onclick="overlayClick(event,'m-campaign')">
+  <div class="modal">
+    <div class="modal-hd"><h2>Pridať kampaň</h2><p>Zadajte kampaň, náklady a vygenerovanú tržbu.</p></div>
+    <div class="modal-body">
+      <div class="field"><label>Názov kampane</label><input type="text" id="f-mk-name" placeholder="napr. Letná Facebook akcia"/></div>
+      <div class="field"><label>Kanál</label>
+        <select id="f-mk-channel">
+          <option value="">Vyberte kanál</option>
+          <option value="Facebook">Facebook</option>
+          <option value="Instagram">Instagram</option>
+          <option value="Google Ads">Google Ads</option>
+          <option value="Email">Email</option>
+          <option value="TikTok">TikTok</option>
+          <option value="YouTube">YouTube</option>
+          <option value="SEO">SEO</option>
+          <option value="Iné">Iné</option>
+        </select>
+      </div>
+      <div class="field"><label>Dátum spustenia</label><input type="date" id="f-mk-date"/></div>
+      <div class="field"><label>Náklady na kampaň ($)</label><input type="number" id="f-mk-cost" step="0.01" min="0" placeholder="0.00"/></div>
+      <div class="field"><label>Prírastok tržby ($)</label><input type="number" id="f-mk-revenue" step="0.01" min="0" placeholder="0.00"/></div>
+      <div class="field"><label>Poznámka (nepovinné)</label><input type="text" id="f-mk-note" placeholder="napr. Cieľová skupina 25–45 rokov"/></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" style="background:var(--muted);color:var(--fg)" onclick="closeModal('m-campaign')">Zrušiť</button>
+      <button class="btn" onclick="addCampaign()">Pridať kampaň</button>
+    </div>
+  </div>
+</div>
+ 
+<div class="toast-wrap" id="toast-wrap"></div>
+ 
+<script>
+const MO=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const COLS=['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4','#ec4899','#f97316'];
+ 
+function load(k,d){try{const s=localStorage.getItem(k);return s?JSON.parse(s):d;}catch{return d;}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+ 
+const DB={
+  transactions:load('bi2_tx',[{id:uid(),date:'2026-03-18',description:'Client Payment – ABC Corp',amount:5000,type:'income',category:''},{id:uid(),date:'2026-03-17',description:'Marketing Ads',amount:-450,type:'expense',category:'Marketing'},{id:uid(),date:'2026-03-16',description:'Software Subscription',amount:-199,type:'expense',category:'Software'}]),
+  timeEntries:load('bi2_te',[{id:uid(),project:'Website Redesign',client:'Tech Corp',hours:8,date:'2026-03-18',billable:true},{id:uid(),project:'Mobile App Dev',client:'StartupXYZ',hours:6,date:'2026-03-18',billable:true}]),
+  investments:load('bi2_inv',[{id:uid(),name:'Office Equipment',category:'Zariadenie',amount:25000,date:'2026-01-15',currentValue:25000},{id:uid(),name:'Marketing Campaign',category:'Marketing',amount:15000,date:'2026-02-01',currentValue:15000}]),
+  monthlyData:load('bi2_md',[{id:uid(),month:'January',year:2026,revenue:12000,expenses:8000},{id:uid(),month:'February',year:2026,revenue:15000,expenses:9000},{id:uid(),month:'March',year:2026,revenue:18000,expenses:10000}]),
+  projectStatuses:load('bi2_ps',[{id:uid(),name:'Project Alpha',status:'completed',weekNumber:1,year:2026},{id:uid(),name:'Project Beta',status:'ongoing',weekNumber:1,year:2026},{id:uid(),name:'Project Gamma',status:'completed',weekNumber:2,year:2026}]),
+  weeklyHours:load('bi2_wh',[{id:uid(),date:'2026-03-17',billableHours:7,nonBillableHours:2},{id:uid(),date:'2026-03-18',billableHours:8,nonBillableHours:1},{id:uid(),date:'2026-03-19',billableHours:6,nonBillableHours:3}]),
+  productivityEntries:load('bi2_pd',[{id:uid(),weekNumber:1,year:2026,productivity:75,target:80},{id:uid(),weekNumber:2,year:2026,productivity:82,target:80},{id:uid(),weekNumber:3,year:2026,productivity:78,target:80}]),
+  portfolioSnapshots:load('bi2_psnap',[{id:uid(),month:'January',year:2026,totalValue:50000,totalInvested:50000},{id:uid(),month:'February',year:2026,totalValue:52500,totalInvested:50000},{id:uid(),month:'March',year:2026,totalValue:54200,totalInvested:55000}]),
+};
+ 
+function persist(){
+  save('bi2_tx',DB.transactions);save('bi2_te',DB.timeEntries);save('bi2_inv',DB.investments);
+  save('bi2_md',DB.monthlyData);save('bi2_ps',DB.projectStatuses);save('bi2_wh',DB.weeklyHours);
+  save('bi2_pd',DB.productivityEntries);save('bi2_psnap',DB.portfolioSnapshots);
+}
+ 
+const charts={};
+const GC='rgba(0,0,0,.07)';
+const scl={x:{grid:{color:GC},ticks:{font:{size:11}}},y:{grid:{color:GC},ticks:{font:{size:11}}}};
+ 
+function mkChart(id,type,data,opts){
+  const el=document.getElementById(id);if(!el)return;
+  if(charts[id]){charts[id].destroy();delete charts[id];}
+  charts[id]=new Chart(el,{type,data,options:{responsive:true,maintainAspectRatio:false,...opts}});
+}
+ 
+function sortedMD(){
+  return [...DB.monthlyData].sort((a,b)=>a.year!==b.year?a.year-b.year:MO.indexOf(a.month)-MO.indexOf(b.month));
+}
+ 
+function buildDash(){
+  const md=sortedMD();
+  const labs=md.map(d=>d.month.slice(0,3)+" '"+String(d.year).slice(2));
+  mkChart('ch-rev-exp','line',{labels:labs,datasets:[
+    {label:'Príjmy',data:md.map(d=>d.revenue),borderColor:'#3b82f6',backgroundColor:'#3b82f620',borderWidth:2,tension:.3,fill:false,pointRadius:4},
+    {label:'Výdavky',data:md.map(d=>d.expenses),borderColor:'#ef4444',backgroundColor:'#ef444420',borderWidth:2,tension:.3,fill:false,pointRadius:4}
+  ]},{plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:12,font:{size:11},padding:14}},tooltip:{callbacks:{label:c=>' $'+c.raw.toLocaleString()}}},scales:{x:scl.x,y:{...scl.y,ticks:{...scl.y.ticks,callback:v=>'$'+(v>=1000?(v/1000)+'k':v)}}}});
+ 
+  const tm={};DB.timeEntries.forEach(e=>{tm[e.project]=(tm[e.project]||0)+e.hours;});
+  const tk=Object.keys(tm);
+  const ptw=document.getElementById('pie-time-wrap');
+  if(ptw){
+    if(tk.length){
+      ptw.innerHTML='<div class="chart-wrap h300"><canvas id="ch-time-pie"></canvas></div>';
+      mkChart('ch-time-pie','pie',{labels:tk,datasets:[{data:tk.map(k=>tm[k]),backgroundColor:COLS.slice(0,tk.length),borderWidth:2,borderColor:'#fff'}]},
+        {plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:12,font:{size:11},padding:14}},tooltip:{callbacks:{label:c=>' '+c.label+': '+c.raw+'h'}}}});
+    } else {
+      ptw.innerHTML='<div class="empty">Žiadne záznamy času. Pridajte záznamy.</div>';
+    }
+  }
+ 
+  const wm={};
+  DB.projectStatuses.forEach(p=>{const k='Týždeň '+p.weekNumber;if(!wm[k])wm[k]={completed:0,ongoing:0};wm[k][p.status]++;});
+  const wk=Object.keys(wm).sort((a,b)=>parseInt(a.split(' ')[1])-parseInt(b.split(' ')[1]));
+  mkChart('ch-proj-status','bar',{labels:wk.length?wk:['—'],datasets:[
+    {label:'Dokončené',data:wk.map(k=>wm[k].completed),backgroundColor:'#10b981',borderRadius:4},
+    {label:'Prebieha',data:wk.map(k=>wm[k].ongoing),backgroundColor:'#f59e0b',borderRadius:4}
+  ]},{plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:12,font:{size:11},padding:14}}},scales:{x:scl.x,y:{...scl.y,ticks:{...scl.y.ticks,stepSize:1}}}});
+}
+ 
+function buildFin(){
+  const md=sortedMD();const labs=md.map(d=>d.month.slice(0,3));
+  mkChart('ch-cashflow','line',{labels:labs,datasets:[
+    {label:'Príjem',data:md.map(d=>d.revenue),borderColor:'#10b981',backgroundColor:'#10b98140',fill:true,tension:.4,borderWidth:2,pointRadius:4},
+    {label:'Výdavky',data:md.map(d=>d.expenses),borderColor:'#ef4444',backgroundColor:'#ef444430',fill:true,tension:.4,borderWidth:2,pointRadius:4},
+    {label:'Zisk',data:md.map(d=>d.revenue-d.expenses),borderColor:'#3b82f6',backgroundColor:'#3b82f625',fill:true,tension:.4,borderWidth:2,pointRadius:4}
+  ]},{plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:12,font:{size:11},padding:14}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': $'+c.raw.toLocaleString()}}},scales:{x:scl.x,y:{...scl.y,ticks:{...scl.y.ticks,callback:v=>'$'+(v>=1000?(v/1000)+'k':v)}}}});
+ 
+  const cm={};DB.transactions.filter(t=>t.type==='expense'&&t.category).forEach(t=>{cm[t.category]=(cm[t.category]||0)+Math.abs(t.amount);});
+  const ck=Object.keys(cm);
+  const ecw=document.getElementById('exp-cat-wrap');
+  if(ecw){
+    if(ck.length){
+      ecw.innerHTML='<div class="chart-wrap h240"><canvas id="ch-exp-cat"></canvas></div>';
+      mkChart('ch-exp-cat','bar',{labels:ck,datasets:[{data:ck.map(k=>cm[k]),backgroundColor:'#8b5cf6',borderRadius:4}]},
+        {indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' $'+c.raw.toLocaleString()}}},scales:{x:{grid:{color:GC},ticks:{font:{size:11},callback:v=>'$'+v}},y:{grid:{color:GC},ticks:{font:{size:11}}}}});
+    } else {
+      ecw.innerHTML='<div class="empty">Zatiaľ žiadne kategórie výdavkov.</div>';
+    }
+  }
+}
+ 
+function buildTime(){
+  const days=['Po','Ut','St','Št','Pi','So','Ne'];
+  const bm={},nm={};days.forEach(d=>{bm[d]=0;nm[d]=0;});
+  DB.weeklyHours.forEach(e=>{const d=new Date(e.date+'T12:00:00');const i=(d.getDay()+6)%7;const day=days[i];bm[day]+=e.billableHours;nm[day]+=e.nonBillableHours;});
+  mkChart('ch-weekly','bar',{labels:days,datasets:[
+    {label:'Fakturovateľné',data:days.map(d=>bm[d]),backgroundColor:'#3b82f6',borderRadius:4},
+    {label:'Nefakturovateľné',data:days.map(d=>nm[d]),backgroundColor:'#94a3b8',borderRadius:4}
+  ]},{plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:12,font:{size:11},padding:14}}},scales:{x:scl.x,y:{...scl.y,ticks:{...scl.y.ticks,stepSize:2}}}});
+ 
+  const sorted=[...DB.productivityEntries].sort((a,b)=>a.year!==b.year?a.year-b.year:a.weekNumber-b.weekNumber);
+  mkChart('ch-productivity','line',{
+    labels:sorted.map(e=>'Týž '+e.weekNumber+" '"+String(e.year).slice(2)),
+    datasets:[
+      {label:'Skutočné',data:sorted.map(e=>e.productivity),borderColor:'#10b981',backgroundColor:'#10b98120',borderWidth:2,tension:.3,fill:false,pointRadius:5},
+      {label:'Cieľ',data:sorted.map(e=>e.target),borderColor:'#94a3b8',borderDash:[5,5],borderWidth:2,tension:0,fill:false,pointRadius:0}
+    ]
+  },{plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:12,font:{size:11},padding:14}}},scales:{x:scl.x,y:{...scl.y,min:0,max:100,ticks:{...scl.y.ticks,callback:v=>v+'%'}}}});
+}
+ 
+function buildInv(){
+  const sorted=[...DB.portfolioSnapshots].sort((a,b)=>a.year!==b.year?a.year-b.year:MO.indexOf(a.month)-MO.indexOf(b.month));
+  mkChart('ch-portfolio','line',{
+    labels:sorted.map(s=>s.month.slice(0,3)+" '"+String(s.year).slice(2)),
+    datasets:[
+      {label:'Hodnota',data:sorted.map(s=>s.totalValue),borderColor:'#3b82f6',backgroundColor:'#3b82f630',fill:true,tension:.4,borderWidth:2,pointRadius:4},
+      {label:'Investované',data:sorted.map(s=>s.totalInvested),borderColor:'#10b981',backgroundColor:'#10b98120',fill:true,tension:.4,borderWidth:2,pointRadius:4}
+    ]
+  },{plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:12,font:{size:11},padding:14}},tooltip:{callbacks:{label:c=>' $'+c.raw.toLocaleString()}}},scales:{x:scl.x,y:{...scl.y,ticks:{...scl.y.ticks,callback:v=>'$'+(v>=1000?(v/1000)+'k':v)}}}});
+ 
+  const cm={};DB.investments.forEach(i=>{cm[i.category]=(cm[i.category]||0)+i.currentValue;});
+  const ck=Object.keys(cm);
+  mkChart('ch-inv-pie','pie',{labels:ck,datasets:[{data:ck.map(k=>cm[k]),backgroundColor:COLS.slice(0,ck.length),borderWidth:2,borderColor:'#fff'}]},
+    {plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:12,font:{size:11},padding:14}},tooltip:{callbacks:{label:c=>' '+c.label+': $'+c.raw.toLocaleString()}}}});
+}
+ 
+const DEL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>';
+function tb(fn){return `<button class="btn-ghost" onclick="${fn}">${DEL}</button>`;}
+function setHTML(id,h){const el=document.getElementById(id);if(el)el.innerHTML=h;}
+ 
+function renderTbls(){
+  const md=sortedMD();
+  setHTML('tbl-monthly',md.length?`<table><thead><tr><th>Mesiac</th><th class="tr">Príjmy</th><th class="tr">Výdavky</th><th></th></tr></thead><tbody>${md.map(d=>`<tr><td>${d.month} ${d.year}</td><td class="tr">$${d.revenue.toLocaleString()}</td><td class="tr">$${d.expenses.toLocaleString()}</td><td>${tb(`delMD('${d.id}')`)} </td></tr>`).join('')}</tbody></table>`:'<div class="empty">Žiadne údaje. Kliknite na „Pridať údaje".</div>');
+  setHTML('tbl-projects',DB.projectStatuses.length?`<table><thead><tr><th>Projekt</th><th>Týždeň</th><th>Stav</th><th></th></tr></thead><tbody>${DB.projectStatuses.map(p=>`<tr><td class="fm">${p.name}</td><td>Týždeň ${p.weekNumber}</td><td><span class="badge ${p.status==='completed'?'b-dark':'b-light'}">${p.status==='completed'?'Dokončený':'Prebieha'}</span></td><td>${tb(`delPS('${p.id}')`)} </td></tr>`).join('')}</tbody></table>`:'<div class="empty">Žiadne projekty. Kliknite na „Pridať projekt".</div>');
+  setHTML('tbl-transactions',DB.transactions.length?`<table><thead><tr><th>Dátum</th><th>Popis</th><th>Typ</th><th class="tr">Suma</th><th></th></tr></thead><tbody>${DB.transactions.map(t=>`<tr><td>${t.date}</td><td>${t.description}</td><td><span class="badge ${t.type==='income'?'b-dark':'b-light'}">${t.type==='income'?'príjem':'výdavok'}</span></td><td class="tr fm ${t.amount>0?'tg':'tr2'}">${t.amount>0?'+':''}\$${Math.abs(t.amount).toLocaleString()}</td><td>${tb(`delTX('${t.id}')`)} </td></tr>`).join('')}</tbody></table>`:'<div class="empty">Zatiaľ žiadne transakcie.</div>');
+  const cm={};DB.transactions.filter(t=>t.type==='expense'&&t.category).forEach(t=>{cm[t.category]=(cm[t.category]||0)+Math.abs(t.amount);});
+  const total=Object.values(cm).reduce((a,b)=>a+b,0);
+  const rows=Object.entries(cm);
+  setHTML('tbl-exp-breakdown',rows.length?`<table><thead><tr><th>Kategória</th><th class="tr">Suma</th><th class="tr">%</th></tr></thead><tbody>${rows.map(([c,a])=>`<tr><td>${c}</td><td class="tr fm">$${a.toLocaleString()}</td><td class="tr">${total?Math.round(a/total*100):0}%</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Zatiaľ žiadne kategórie výdavkov.</div>');
+  setHTML('tbl-timeentries',DB.timeEntries.length?`<table><thead><tr><th>Dátum</th><th>Projekt</th><th>Klient</th><th class="tr">Hodiny</th><th>Fakturov.</th><th></th></tr></thead><tbody>${DB.timeEntries.map(e=>`<tr><td>${e.date}</td><td class="fm">${e.project}</td><td>${e.client}</td><td class="tr">${e.hours}h</td><td><span class="badge ${e.billable?'b-dark':'b-light'}">${e.billable?'Áno':'Nie'}</span></td><td>${tb(`delTE('${e.id}')`)} </td></tr>`).join('')}</tbody></table>`:'<div class="empty">Žiadne záznamy času. Pridajte záznamy.</div>');
+  const cmap={};DB.timeEntries.forEach(e=>{if(!cmap[e.client])cmap[e.client]={hours:0,projects:new Set()};cmap[e.client].hours+=e.hours;cmap[e.client].projects.add(e.project);});
+  const cl=Object.entries(cmap);
+  setHTML('tbl-byclient',cl.length?`<table><thead><tr><th>Klient</th><th class="tr">Celk. hodiny</th><th class="tr">Projekty</th></tr></thead><tbody>${cl.map(([c,v])=>`<tr><td class="fm">${c}</td><td class="tr">${v.hours.toFixed(1)}h</td><td class="tr">${v.projects.size}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Zatiaľ žiadni klienti.</div>');
+  setHTML('tbl-dailyhours',DB.weeklyHours.length?`<table><thead><tr><th>Dátum</th><th class="tr">Fakturov.</th><th class="tr">Nefakturov.</th><th></th></tr></thead><tbody>${DB.weeklyHours.map(e=>`<tr><td>${e.date}</td><td class="tr">${e.billableHours}h</td><td class="tr">${e.nonBillableHours}h</td><td>${tb(`delWH('${e.id}')`)} </td></tr>`).join('')}</tbody></table>`:'<div class="empty">Žiadne denné záznamy hodín.</div>');
+  setHTML('tbl-productivity',DB.productivityEntries.length?`<table><thead><tr><th>Týždeň</th><th class="tr">Produktivita</th><th class="tr">Cieľ</th><th></th></tr></thead><tbody>${DB.productivityEntries.map(e=>`<tr><td>Týždeň ${e.weekNumber}, ${e.year}</td><td class="tr">${e.productivity}%</td><td class="tr">${e.target}%</td><td>${tb(`delPD('${e.id}')`)} </td></tr>`).join('')}</tbody></table>`:'<div class="empty">Žiadne údaje o produktivite.</div>');
+  setHTML('tbl-investments',DB.investments.length?`<table><thead><tr><th>Názov</th><th>Kategória</th><th>Dátum</th><th class="tr">Investované</th><th class="tr">Aktuálna hodnota</th><th class="tr">ROI</th><th></th></tr></thead><tbody>${DB.investments.map(inv=>{const roi=inv.amount>0?Math.round((inv.currentValue-inv.amount)/inv.amount*100):0;return`<tr><td class="fm">${inv.name}</td><td>${inv.category}</td><td>${inv.date}</td><td class="tr">$${inv.amount.toLocaleString()}</td><td class="tr">$${inv.currentValue.toLocaleString()}</td><td class="tr"><span class="badge ${roi>0?'b-green':'b-light'}">${roi>0?'+':''} ${roi}%</span></td><td>${tb(`delINV('${inv.id}')`)} </td></tr>`;}).join('')}</tbody></table>`:'<div class="empty">Zatiaľ žiadne investície.</div>');
+  const snaps=[...DB.portfolioSnapshots].sort((a,b)=>a.year!==b.year?a.year-b.year:MO.indexOf(a.month)-MO.indexOf(b.month));
+  setHTML('tbl-snapshots',snaps.length?`<table><thead><tr><th>Mesiac</th><th class="tr">Celk. hodnota</th><th class="tr">Celk. investície</th><th class="tr">Zisk/Strata</th><th></th></tr></thead><tbody>${snaps.map(s=>{const gl=s.totalValue-s.totalInvested;return`<tr><td>${s.month} ${s.year}</td><td class="tr">$${s.totalValue.toLocaleString()}</td><td class="tr">$${s.totalInvested.toLocaleString()}</td><td class="tr ${gl>0?'tg':gl<0?'tr2':'neu'}">${gl>0?'+':''}\$${gl.toLocaleString()}</td><td>${tb(`delSNAP('${s.id}')`)} </td></tr>`;}).join('')}</tbody></table>`:'<div class="empty">Žiadne snímky portfólia.</div>');
+}
+ 
+function ico(p){return`<svg class="mc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${p}</svg>`;}
+const ICO={dollar:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',trend:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',wallet:'<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',check:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',tdown:'<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>',pie:'<path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>',};
+function mc(t,v,s,sc,ik){return`<div class="mc"><div class="mc-hd"><span class="mc-title">${t}</span>${ico(ICO[ik])}</div><div class="mc-body"><div class="mc-val">${v}</div><p class="mc-sub ${sc}">${s}</p></div></div>`;}
+ 
+function renderMetrics(){
+  const latest=sortedMD().at(-1);
+  const rev=latest?.revenue||0,exp=latest?.expenses||0,profit=rev-exp;
+  const totalH=DB.timeEntries.reduce((a,e)=>a+e.hours,0);
+  const activeP=new Set(DB.timeEntries.map(e=>e.project)).size;
+  setHTML('dash-metrics',
+    mc('Mesačné príjmy','$'+rev.toLocaleString(),latest?latest.month+' '+latest.year:'Žiadne údaje','neu','dollar')+
+    mc('Čistý zisk','$'+profit.toLocaleString(),'Po odpočítaní $'+exp.toLocaleString(),profit>=0?'pos':'neg','trend')+
+    mc('Aktívne projekty',activeP,DB.timeEntries.length+' záznamy','neu','pie')+
+    mc('Celkové hodiny',totalH.toFixed(1)+'h','Všetok sledovaný čas','neu','clock'));
+  const inc=DB.transactions.filter(t=>t.type==='income').reduce((a,t)=>a+t.amount,0);
+  const texps=DB.transactions.filter(t=>t.type==='expense').reduce((a,t)=>a+Math.abs(t.amount),0);
+  setHTML('fin-metrics',
+    mc('Celkové príjmy','$'+inc.toLocaleString(),'+15% YTD','pos','dollar')+
+    mc('Celkové výdavky','$'+texps.toLocaleString(),'+8% YTD','neg','tdown')+
+    mc('Čistý zisk','$'+(inc-texps).toLocaleString(),'+24% YTD',(inc-texps)>=0?'pos':'neg','trend')+
+    mc('Zostatok na účte','$85,000','Dostupné finančné prostriedky','neu','wallet'));
+  const bh=DB.timeEntries.filter(e=>e.billable).reduce((a,e)=>a+e.hours,0);
+  const clients=new Set(DB.timeEntries.map(e=>e.client)).size;
+  const lastP=DB.productivityEntries.at(-1);
+  setHTML('time-metrics',
+    mc('Celkové hodiny',totalH.toFixed(1)+'h','Všetky záznamy','neu','clock')+
+    mc('Fakturovateľné hodiny',bh.toFixed(1)+'h',DB.timeEntries.length+' záznamy','neu','clock')+
+    mc('Produktivita',(lastP?.productivity||0)+'%','+7% oproti minulému týždňu','pos','check')+
+    mc('Aktívni klienti',clients,'Sledovaní klienti','neu','pie'));
+  const ti=DB.investments.reduce((a,i)=>a+i.amount,0);
+  const tv=DB.investments.reduce((a,i)=>a+i.currentValue,0);
+  const tr=tv-ti,trp=ti>0?((tr/ti)*100).toFixed(1):'0.0';
+  const lsnap=[...DB.portfolioSnapshots].sort((a,b)=>a.year!==b.year?b.year-a.year:MO.indexOf(b.month)-MO.indexOf(a.month))[0];
+  setHTML('inv-metrics',
+    mc('Celkové investície','$'+ti.toLocaleString(),DB.investments.length+' aktív','neu','dollar')+
+    mc('Aktuálna hodnota','$'+tv.toLocaleString(),'Trhová hodnota','neu','clock')+
+    mc('Celkový výnos','$'+tr.toLocaleString(),trp+'% výnos',tr>=0?'pos':'neg','trend')+
+    mc('Hodnota portfólia',lsnap?'$'+lsnap.totalValue.toLocaleString():'—',lsnap?lsnap.month+' '+lsnap.year:'Žiadne snímky','neu','wallet'));
+}
+ 
+ 
+/* ═══════════════════════════════════════════════════
+   MARKETING
+═══════════════════════════════════════════════════ */
+DB.campaigns = load('bi2_campaigns', [
+  {id:uid(),name:'Jarná Facebook kampaň',channel:'Facebook',date:'2026-01-10',cost:450,revenue:2800,note:'Cieľová skupina 25–45 rokov'},
+  {id:uid(),name:'Google Ads – jar',channel:'Google Ads',date:'2026-02-01',cost:800,revenue:4100,note:'Kľúčové slová: výlety, dovolenka'},
+  {id:uid(),name:'Instagram Story – zima',channel:'Instagram',date:'2026-03-05',cost:300,revenue:1200,note:'Produktové fotky'},
+]);
+ 
+function buildMkt() {
+  const cs = DB.campaigns;
+  const names = cs.map(c => c.name.length > 20 ? c.name.slice(0,18)+'…' : c.name);
+ 
+  // Bar: cost vs revenue
+  mkChart('ch-mkt-bar','bar',{
+    labels: names,
+    datasets:[
+      {label:'Náklady ($)', data:cs.map(c=>c.cost), backgroundColor:'#ef4444', borderRadius:4},
+      {label:'Prírastok tržby ($)', data:cs.map(c=>c.revenue), backgroundColor:'#10b981', borderRadius:4}
+    ]
+  },{plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:12,font:{size:11},padding:14}},
+    tooltip:{callbacks:{label:ctx=>' $'+ctx.raw.toLocaleString()}}},
+    scales:{x:{grid:{color:GC},ticks:{font:{size:10}}},y:{grid:{color:GC},ticks:{font:{size:11},callback:v=>'$'+(v>=1000?(v/1000)+'k':v)}}}});
+ 
+  // Doughnut: cost by channel
+  const chMap={};
+  cs.forEach(c=>{chMap[c.channel]=(chMap[c.channel]||0)+c.cost;});
+  const chKeys=Object.keys(chMap);
+  const chWrap=document.getElementById('mkt-channel-wrap');
+  if(chWrap){
+    if(chKeys.length){
+      chWrap.innerHTML='<div class="chart-wrap h240"><canvas id="ch-mkt-channel"></canvas></div>';
+      mkChart('ch-mkt-channel','doughnut',{
+        labels:chKeys,
+        datasets:[{data:chKeys.map(k=>chMap[k]),backgroundColor:COLS.slice(0,chKeys.length),borderWidth:2,borderColor:'#fff'}]
+      },{plugins:{legend:{display:true,position:'bottom',labels:{boxWidth:12,font:{size:11},padding:12}},
+        tooltip:{callbacks:{label:c=>' '+c.label+': $'+c.raw.toLocaleString()}}}});
+    } else {
+      chWrap.innerHTML='<div class="empty">Žiadne kampane.</div>';
+    }
+  }
+}
+ 
+function renderMktTbls() {
+  const cs = DB.campaigns;
+  const DEL_SVG = DEL;
+ 
+  // Left: campaign list
+  if(!cs.length){
+    setHTML('tbl-campaigns','<div class="empty">Žiadne kampane. Kliknite „+ Pridať kampaň".</div>');
+    setHTML('tbl-rev-impact','<div class="empty">Žiadne údaje o vplyve na tržbu.</div>');
+    setHTML('tbl-mkt-channel','<div class="empty">Žiadne kanály.</div>');
+    return;
+  }
+ 
+  setHTML('tbl-campaigns', '<div>' + cs.map(c=>`
+    <div class="mkt-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="mkt-name">${c.name}</div>
+          <div class="mkt-meta">
+            <span style="background:var(--muted);color:var(--muted-fg);padding:1px 7px;border-radius:20px;font-size:11px;font-weight:500">${c.channel}</span>
+            <span>${c.date}</span>
+            ${c.note ? `<span style="font-style:italic">${c.note}</span>` : ''}
+          </div>
+          <div class="mkt-cost">Náklady: <strong>$${c.cost.toLocaleString()}</strong></div>
+        </div>
+        <button class="btn-ghost" onclick="delCampaign('${c.id}')">${DEL_SVG}</button>
+      </div>
+    </div>`).join('') + '</div>');
+ 
+  // Right: revenue impact
+  const totalCost = cs.reduce((a,c)=>a+c.cost,0);
+  const totalRev  = cs.reduce((a,c)=>a+c.revenue,0);
+  const netProfit = totalRev - totalCost;
+  const overallRoi = totalCost > 0 ? Math.round(netProfit/totalCost*100) : 0;
+ 
+  setHTML('tbl-rev-impact', '<div>' + cs.map(c=>{
+    const roi = c.cost > 0 ? Math.round((c.revenue-c.cost)/c.cost*100) : 0;
+    return `<div class="rev-card">
+      <div>
+        <div class="rev-name">${c.name.length>26?c.name.slice(0,24)+'…':c.name}</div>
+        <div class="rev-channel">${c.channel}</div>
+      </div>
+      <div class="rev-right">
+        <div class="rev-amount">+$${c.revenue.toLocaleString()}</div>
+        <div class="rev-roi ${roi>=0?'tg':'tr2'}">${roi>=0?'+':''}${roi}% ROI</div>
+      </div>
+    </div>`;
+  }).join('') +
+  `<div class="rev-total">
+    <span class="rev-total-label">Celkový zisk z marketingu</span>
+    <span class="rev-total-val ${netProfit>=0?'tg':'tr2'}">${netProfit>=0?'+':''}$${netProfit.toLocaleString()}</span>
+  </div></div>`);
+ 
+  // Channel summary table
+  const chMap={};
+  cs.forEach(c=>{
+    if(!chMap[c.channel]) chMap[c.channel]={cost:0,revenue:0,count:0};
+    chMap[c.channel].cost+=c.cost;
+    chMap[c.channel].revenue+=c.revenue;
+    chMap[c.channel].count++;
+  });
+  const chRows = Object.entries(chMap);
+  setHTML('tbl-mkt-channel', `<table>
+    <thead><tr><th>Kanál</th><th class="tr">Kampane</th><th class="tr">Náklady</th><th class="tr">Tržba</th><th class="tr">ROI</th></tr></thead>
+    <tbody>${chRows.map(([ch,v])=>{
+      const roi=v.cost>0?Math.round((v.revenue-v.cost)/v.cost*100):0;
+      return `<tr>
+        <td class="fm">${ch}</td>
+        <td class="tr">${v.count}</td>
+        <td class="tr">$${v.cost.toLocaleString()}</td>
+        <td class="tr tg">+$${v.revenue.toLocaleString()}</td>
+        <td class="tr ${roi>=0?'tg':'tr2'}">${roi>=0?'+':''}${roi}%</td>
+      </tr>`;}).join('')}
+    </tbody>
+  </table>`);
+}
+ 
+function renderMktMetrics() {
+  const cs = DB.campaigns;
+  const totalCost = cs.reduce((a,c)=>a+c.cost,0);
+  const totalRev  = cs.reduce((a,c)=>a+c.revenue,0);
+  const profit    = totalRev - totalCost;
+  const avgRoi    = totalCost>0 ? Math.round(profit/totalCost*100) : 0;
+  setHTML('mkt-metrics',
+    mc('Celkové náklady','$'+totalCost.toLocaleString(),cs.length+' kampane','neu','dollar')+
+    mc('Prírastok tržby','$'+totalRev.toLocaleString(),'Vygenerované kampaňami','pos','trend')+
+    mc('Čistý zisk z mkt.','$'+profit.toLocaleString(),profit>=0?'Pozitívne ROI':'Negatívne ROI',profit>=0?'pos':'neg','pie')+
+    mc('Priemerné ROI',avgRoi+'%','Zo všetkých kampaní',avgRoi>=0?'pos':'neg','check'));
+}
+ 
+function addCampaign(){
+  const name=v('f-mk-name'),channel=v('f-mk-channel'),date=v('f-mk-date');
+  const cost=n('f-mk-cost'),revenue=n('f-mk-revenue'),note=v('f-mk-note');
+  if(!name||!channel||!date){toast('Vyplňte prosím všetky povinné polia','err');return;}
+  if(isNaN(cost)||cost<0){toast('Zadajte platné náklady','err');return;}
+  if(isNaN(revenue)||revenue<0){toast('Zadajte platný prírastok tržby','err');return;}
+  DB.campaigns.unshift({id:uid(),name,channel,date,cost,revenue,note});
+  save('bi2_campaigns',DB.campaigns);
+  closeModal('m-campaign');
+  renderMktMetrics();buildMkt();renderMktTbls();
+  toast('Kampaň pridaná','ok');
+  ['f-mk-name','f-mk-channel','f-mk-cost','f-mk-revenue','f-mk-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+ 
+function delCampaign(id){
+  DB.campaigns=DB.campaigns.filter(c=>c.id!==id);
+  save('bi2_campaigns',DB.campaigns);
+  renderMktMetrics();buildMkt();renderMktTbls();
+  toast('Kampaň odstránená','ok');
+}
+ 
+function renderAll(){renderMetrics();buildDash();buildFin();buildTime();buildInv();renderTbls();renderMktMetrics();buildMkt();renderMktTbls();}
+ 
+function delMD(id){DB.monthlyData=DB.monthlyData.filter(d=>d.id!==id);persist();renderAll();toast('Mesačné údaje odstránené','ok');}
+function delPS(id){DB.projectStatuses=DB.projectStatuses.filter(d=>d.id!==id);persist();renderAll();toast('Projekt odstránený','ok');}
+function delTX(id){DB.transactions=DB.transactions.filter(d=>d.id!==id);persist();renderAll();toast('Transakcia odstránená','ok');}
+function delTE(id){DB.timeEntries=DB.timeEntries.filter(d=>d.id!==id);persist();renderAll();toast('Záznam času odstránený','ok');}
+function delWH(id){DB.weeklyHours=DB.weeklyHours.filter(d=>d.id!==id);persist();renderAll();toast('Záznam hodín odstránený','ok');}
+function delPD(id){DB.productivityEntries=DB.productivityEntries.filter(d=>d.id!==id);persist();renderAll();toast('Záznam produktivity odstránený','ok');}
+function delINV(id){DB.investments=DB.investments.filter(d=>d.id!==id);persist();renderAll();toast('Investícia odstránená','ok');}
+function delSNAP(id){DB.portfolioSnapshots=DB.portfolioSnapshots.filter(d=>d.id!==id);persist();renderAll();toast('Snímka odstránená','ok');}
+ 
+function v(id){return document.getElementById(id)?.value?.trim()||'';}
+function n(id){return parseFloat(document.getElementById(id)?.value||'');}
+ 
+function addTransaction(){
+  const desc=v('f-tx-desc'),amt=n('f-tx-amount'),type=v('f-tx-type'),date=v('f-tx-date');
+  if(!desc||!date){toast('Vyplňte prosím všetky povinné polia','err');return;}
+  if(isNaN(amt)||amt<=0){toast('Zadajte prosím platnú sumu','err');return;}
+  DB.transactions.unshift({id:uid(),date,description:desc,amount:type==='expense'?-Math.abs(amt):Math.abs(amt),type,category:v('f-tx-cat')});
+  persist();closeModal('m-transaction');renderAll();toast('Transakcia úspešne pridaná','ok');
+  ['f-tx-desc','f-tx-amount','f-tx-cat'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+function addMonthlyData(){
+  const month=v('f-md-month'),year=parseInt(v('f-md-year')),rev=n('f-md-rev'),exp=n('f-md-exp');
+  if(!month||isNaN(year)||isNaN(rev)||isNaN(exp)){toast('Vyplňte prosím všetky polia','err');return;}
+  DB.monthlyData.push({id:uid(),month,year,revenue:rev,expenses:exp});
+  persist();closeModal('m-monthly');renderAll();toast('Mesačné údaje pridané','ok');
+  ['f-md-month','f-md-rev','f-md-exp'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+function addProject(){
+  const name=v('f-pr-name'),status=v('f-pr-status'),wk=parseInt(v('f-pr-week')),yr=parseInt(v('f-pr-year'));
+  if(!name||isNaN(wk)||wk<1||wk>53){toast('Vyplňte prosím všetky polia (týždeň 1–53)','err');return;}
+  DB.projectStatuses.push({id:uid(),name,status,weekNumber:wk,year:yr});
+  persist();closeModal('m-project');renderAll();toast('Projekt pridaný','ok');
+  ['f-pr-name','f-pr-week'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+function addTimeEntry(){
+  const project=v('f-te-project'),client=v('f-te-client'),hours=n('f-te-hours'),date=v('f-te-date');
+  const billable=document.getElementById('f-te-billable')?.checked??true;
+  if(!project||!client||!date||isNaN(hours)||hours<=0){toast('Vyplňte prosím všetky povinné polia','err');return;}
+  DB.timeEntries.unshift({id:uid(),project,client,hours,date,billable});
+  persist();closeModal('m-timeentry');renderAll();toast('Záznam času pridaný','ok');
+  ['f-te-project','f-te-client','f-te-hours'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+function addWeeklyHours(){
+  const date=v('f-wh-date'),bill=n('f-wh-bill'),nb=n('f-wh-nb');
+  if(!date||isNaN(bill)||isNaN(nb)){toast('Vyplňte prosím všetky polia','err');return;}
+  DB.weeklyHours.push({id:uid(),date,billableHours:bill,nonBillableHours:nb});
+  persist();closeModal('m-weeklyhours');renderAll();toast('Hodiny pridané','ok');
+  ['f-wh-bill','f-wh-nb'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+function addProductivity(){
+  const wk=parseInt(v('f-pd-week')),yr=parseInt(v('f-pd-year')),prod=n('f-pd-prod'),tgt=n('f-pd-tgt');
+  if(isNaN(wk)||wk<1||wk>53||isNaN(prod)||isNaN(tgt)){toast('Vyplňte prosím všetky polia','err');return;}
+  DB.productivityEntries.push({id:uid(),weekNumber:wk,year:yr,productivity:prod,target:tgt});
+  persist();closeModal('m-productivity');renderAll();toast('Údaje o produktivite pridané','ok');
+  ['f-pd-week','f-pd-prod'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+function addInvestment(){
+  const name=v('f-inv-name'),cat=v('f-inv-cat'),amt=n('f-inv-amt'),date=v('f-inv-date');
+  if(!name||!cat||!date||isNaN(amt)||amt<=0){toast('Vyplňte prosím všetky povinné polia','err');return;}
+  const cvRaw=document.getElementById('f-inv-cv')?.value?.trim();
+  const cv=cvRaw?parseFloat(cvRaw):amt;
+  DB.investments.unshift({id:uid(),name,category:cat,amount:amt,date,currentValue:cv});
+  persist();closeModal('m-investment');renderAll();toast('Investícia pridaná','ok');
+  ['f-inv-name','f-inv-cat','f-inv-amt','f-inv-cv'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+function addSnapshot(){
+  const month=v('f-ps-month'),yr=parseInt(v('f-ps-year')),val=n('f-ps-val'),inv=n('f-ps-inv');
+  if(!month||isNaN(yr)||isNaN(val)||isNaN(inv)){toast('Vyplňte prosím všetky polia','err');return;}
+  DB.portfolioSnapshots.push({id:uid(),month,year:yr,totalValue:val,totalInvested:inv});
+  persist();closeModal('m-snapshot');renderAll();toast('Snímka portfólia pridaná','ok');
+  ['f-ps-month','f-ps-val','f-ps-inv'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+ 
+function openModal(id){
+  const today=new Date().toISOString().split('T')[0];
+  document.querySelectorAll('#'+id+' input[type="date"]').forEach(el=>{if(!el.value)el.value=today;});
+  document.getElementById(id)?.classList.remove('hidden');
+}
+function closeModal(id){document.getElementById(id)?.classList.add('hidden');}
+function overlayClick(e,id){if(e.target===e.currentTarget)closeModal(id);}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay:not(.hidden)').forEach(el=>el.classList.add('hidden'));});
+ 
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id)?.classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  document.getElementById('sidebar')?.classList.remove('open');
+  document.getElementById('sb-overlay')?.classList.remove('open');
+}
+function toggleSidebar(){
+  document.getElementById('sidebar')?.classList.toggle('open');
+  document.getElementById('sb-overlay')?.classList.toggle('open');
+}
+function toast(msg,type){
+  const w=document.getElementById('toast-wrap');
+  const el=document.createElement('div');
+  el.className='toast '+(type==='ok'?'ok':'err');
+  el.textContent=msg;
+  w.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},3000);
+}
+ 
+renderAll();
+</script>
+</body>
+</html>
