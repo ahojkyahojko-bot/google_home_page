@@ -305,17 +305,17 @@ tbody tr:hover{background:var(--accent)}
 
     <!-- Login form -->
     <div id="form-login">
-      <div class="login-field"><label>Meno a priezvisko</label><input type="text" id="l-name" placeholder="napr. Ján Novák" autocomplete="name"/></div>
-      <div class="login-field"><label>Heslo</label><input type="password" id="l-pass" placeholder="••••••••"/></div>
+      <div class="login-field"><label>Meno a priezvisko</label><input type="text" id="l-name" placeholder="meno" autocomplete="name"/></div>
+      <div class="login-field"><label>Heslo</label><input type="password" id="l-pass" placeholder=""/></div>
       <button class="login-btn" onclick="doLogin()">Prihlásiť sa</button>
       <div class="login-err" id="login-err"></div>
     </div>
 
     <!-- Register form -->
     <div id="form-register" style="display:none">
-      <div class="login-field"><label>Meno a priezvisko</label><input type="text" id="r-name" placeholder="napr. Ján Novák"/></div>
+      <div class="login-field"><label>Meno a priezvisko</label><input type="text" id="r-name" placeholder="meno"/></div>
       <div class="login-field"><label>Heslo</label><input type="password" id="r-pass" placeholder="Minimálne 4 znaky"/></div>
-      <div class="login-field"><label>Zopakuj heslo</label><input type="password" id="r-pass2" placeholder="••••••••"/></div>
+      <div class="login-field"><label>Zopakuj heslo</label><input type="password" id="r-pass2" placeholder=""/></div>
       <button class="login-btn" onclick="doRegister()">Vytvoriť konto</button>
       <div class="login-err" id="register-err"></div>
     </div>
